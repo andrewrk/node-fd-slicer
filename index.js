@@ -46,10 +46,9 @@ ReadStream.prototype._read = function(n) {
     self.push(null);
     return;
   }
-  var buffer = new Buffer(toRead);
-
   self.context.pend.go(function(cb) {
     if (self.destroyed) return cb();
+    var buffer = new Buffer(toRead);
     fs.read(self.context.fd, buffer, 0, toRead, self.pos, function(err, bytesRead) {
       if (err) {
         self.destroy();
