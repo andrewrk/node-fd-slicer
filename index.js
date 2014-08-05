@@ -5,23 +5,19 @@ var Readable = stream.Readable;
 var Writable = stream.Writable;
 var Pend = require('pend');
 
-exports.createContext = createContext;
+module.exports = FdSlicer;
 
-function createContext(fd) {
-  return new Context(fd);
-}
-
-function Context(fd) {
+function FdSlicer(fd) {
   this.fd = fd;
   this.pend = new Pend();
   this.pend.max = 1;
 }
 
-Context.prototype.createReadStream = function(options) {
+FdSlicer.prototype.createReadStream = function(options) {
   return new ReadStream(this, options);
 };
 
-Context.prototype.createWriteStream = function(options) {
+FdSlicer.prototype.createWriteStream = function(options) {
   return new WriteStream(this, options);
 };
 

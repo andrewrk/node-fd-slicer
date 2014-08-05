@@ -34,7 +34,7 @@ the convenient stream API while still allowing slicing and dicing.
 ## Usage
 
 ```js
-var FdSlicer = require('FdSlicer');
+var FdSlicer = require('fd-slicer');
 var fs = require('fs');
 
 fs.open("file.txt", 'r', function(err, fd) {
