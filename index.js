@@ -81,17 +81,10 @@ function WriteStream(context, options) {
   this.destroyed = false;
 }
 
-WriteStream.prototype._write = function(data, encoding, callback) {
+WriteStream.prototype._write = function(buffer, encoding, callback) {
   var self = this;
   if (self.destroyed) return;
 
-  var buffer;
-  if (self.context.pend.pending) {
-    buffer = new Buffer(data.length);
-    data.copy(buffer);
-  } else {
-    buffer = data;
-  }
   self.context.pend.go(function(cb) {
     if (self.destroyed) return cb();
     fs.write(self.context.fd, buffer, 0, buffer.length, self.pos, function(err, bytes) {
