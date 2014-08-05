@@ -3,6 +3,16 @@
   "version": "0.0.0",
   "description": "safely create multiple ReadStream or WriteStream objects from the same file descriptor",
   "main": "index.js",
+  "scripts": {
+    "test": "mocha --reporter spec"
+  },
   "author": "Andrew Kelley <superjoe30@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "~1.21.3",
+    "stream-equal": "~0.1.5"
+  },
+  "dependencies": {
+    "pend": "~1.1.2"
+  }
 }

@@ -23,6 +23,7 @@ FdSlicer.prototype.createWriteStream = function(options) {
 
 util.inherits(ReadStream, Readable);
 function ReadStream(context, options) {
+  options = options || {};
   Readable.call(this, options);
 
   this.context = context;
@@ -71,7 +72,6 @@ ReadStream.prototype.destroy = function() {
 util.inherits(WriteStream, Writable);
 function WriteStream(context, options) {
   options = options || {};
-
   Writable.call(this, options);
 
   this.context = context;
