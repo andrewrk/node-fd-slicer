@@ -18,14 +18,15 @@ describe("FdSlicer", function() {
     for (var i = 0; i < 20 * 1024; i += 1) {
       out.write(crypto.pseudoRandomBytes(1024));
     }
-    out.end(done);
+    out.end();
+    out.on('close', done);
   });
   after(function(done) {
     fs.unlink(testBlobFile, function(err) {
       done();
     });
   });
-  it("reads a normal file ok", function(done) {
+  it("reads a 20MB file", function(done) {
     fs.open(testBlobFile, 'r', function(err, fd) {
       if (err) return done(err);
       var fdSlicer = new FdSlicer(fd);
@@ -35,7 +36,7 @@ describe("FdSlicer", function() {
       streamEqual(expectedStream, actualStream, function(err, equal) {
         if (err) return done(err);
         assert.ok(equal);
-        fs.close(fdSlicer.fd, done);
+        fs.close(fd, done);
       });
     });
   });

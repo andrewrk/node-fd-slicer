@@ -47,6 +47,4 @@ fs.open("file.txt", 'r', function(err, fd) {
   firstPart.pipe(firstOut);
   secondPart.pipe(secondOut);
 });
-
-fdSlicer.create();
 ```

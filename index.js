@@ -32,14 +32,13 @@ function ReadStream(context, options) {
   this.end = options.end;
   this.pos = this.start;
   this.destroyed = false;
-  this.buffer = new Buffer(this._readableState.highWaterMark);
 }
 
 ReadStream.prototype._read = function(n) {
   var self = this;
   if (self.destroyed) return;
 
-  var toRead = Math.min(self.buffer.length, n);
+  var toRead = Math.min(self._readableState.highWaterMark, n);
   if (self.end != null) {
     toRead = Math.min(toRead, self.end - self.pos);
   }
@@ -47,10 +46,11 @@ ReadStream.prototype._read = function(n) {
     self.push(null);
     return;
   }
+  var buffer = new Buffer(toRead);
 
   self.context.pend.go(function(cb) {
     if (self.destroyed) return cb();
-    fs.read(self.context.fd, self.buffer, 0, toRead, self.pos, function(err, bytesRead) {
+    fs.read(self.context.fd, buffer, 0, toRead, self.pos, function(err, bytesRead) {
       cb();
       if (err) {
         self.destroy();
@@ -59,7 +59,7 @@ ReadStream.prototype._read = function(n) {
         self.push(null);
       } else {
         self.pos += bytesRead;
-        self.push(self.buffer.slice(0, bytesRead));
+        self.push(buffer.slice(0, bytesRead));
       }
     });
   });
