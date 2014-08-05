@@ -9,10 +9,12 @@ var Pend = require('pend');
 var describe = global.describe;
 var it = global.it;
 var before = global.before;
+var beforeEach = global.beforeEach;
 var after = global.after;
 
 var testBlobFile = path.join(__dirname, "test-blob.bin");
 var testBlobFileSize = 20 * 1024 * 1024;
+var testOutBlobFile = path.join(__dirname, "test-blob-out.bin");
 
 describe("FdSlicer", function() {
   before(function(done) {
@@ -23,10 +25,18 @@ describe("FdSlicer", function() {
     out.end();
     out.on('close', done);
   });
-  after(function(done) {
-    fs.unlink(testBlobFile, function(err) {
-      done();
-    });
+  beforeEach(function() {
+    try {
+      fs.unlinkSync(testOutBlobFile);
+    } catch (err) {
+    }
+  });
+  after(function() {
+    try {
+      fs.unlinkSync(testBlobFile);
+      fs.unlinkSync(testOutBlobFile);
+    } catch (err) {
+    }
   });
   it("reads a 20MB file", function(done) {
     fs.open(testBlobFile, 'r', function(err, fd) {
@@ -46,14 +56,14 @@ describe("FdSlicer", function() {
     fs.open(testBlobFile, 'r', function(err, fd) {
       if (err) return done(err);
       var fdSlicer = new FdSlicer(fd);
-      var actualPart1 = fdSlicer.createReadStream({start: testBlobFileSize * 0/4});
-      var actualPart2 = fdSlicer.createReadStream({start: testBlobFileSize * 1/4});
-      var actualPart3 = fdSlicer.createReadStream({start: testBlobFileSize * 2/4});
-      var actualPart4 = fdSlicer.createReadStream({start: testBlobFileSize * 3/4});
-      var expectedPart1 = fdSlicer.createReadStream({start: testBlobFileSize * 0/4});
-      var expectedPart2 = fdSlicer.createReadStream({start: testBlobFileSize * 1/4});
-      var expectedPart3 = fdSlicer.createReadStream({start: testBlobFileSize * 2/4});
-      var expectedPart4 = fdSlicer.createReadStream({start: testBlobFileSize * 3/4});
+      var actualPart1 = fdSlicer.createReadStream({start: testBlobFileSize * 0/4, end: testBlobFileSize * 1/4});
+      var actualPart2 = fdSlicer.createReadStream({start: testBlobFileSize * 1/4, end: testBlobFileSize * 2/4});
+      var actualPart3 = fdSlicer.createReadStream({start: testBlobFileSize * 2/4, end: testBlobFileSize * 3/4});
+      var actualPart4 = fdSlicer.createReadStream({start: testBlobFileSize * 3/4, end: testBlobFileSize * 4/4});
+      var expectedPart1 = fdSlicer.createReadStream({start: testBlobFileSize * 0/4, end: testBlobFileSize * 1/4});
+      var expectedPart2 = fdSlicer.createReadStream({start: testBlobFileSize * 1/4, end: testBlobFileSize * 2/4});
+      var expectedPart3 = fdSlicer.createReadStream({start: testBlobFileSize * 2/4, end: testBlobFileSize * 3/4});
+      var expectedPart4 = fdSlicer.createReadStream({start: testBlobFileSize * 3/4, end: testBlobFileSize * 4/4});
       var pend = new Pend();
       pend.go(function(cb) {
         streamEqual(expectedPart1, actualPart1, function(err, equal) {
@@ -81,8 +91,75 @@ describe("FdSlicer", function() {
       });
       pend.wait(function(err) {
         if (err) return done(err);
-        fs.close(fd);
-        done();
+        fs.close(fd, done);
+      });
+    });
+  });
+
+  it("writes a 20MB file", function(done) {
+    fs.open(testOutBlobFile, 'w', function(err, fd) {
+      if (err) return done(err);
+      var fdSlicer = new FdSlicer(fd);
+      var actualStream = fdSlicer.createWriteStream();
+      var inStream = fs.createReadStream(testBlobFile);
+
+      inStream.pipe(actualStream);
+      actualStream.on('finish', function() {
+        fs.close(fd, function(err) {
+          if (err) return done(err);
+          var expected = fs.createReadStream(testBlobFile);
+          var actual = fs.createReadStream(testOutBlobFile);
+
+          streamEqual(expected, actual, function(err, equal) {
+            if (err) return done(err);
+            assert.ok(equal);
+            done();
+          });
+        });
+      });
+    });
+  });
+
+  it("writes 4 chunks simultaneously", function(done) {
+    fs.open(testOutBlobFile, 'w', function(err, fd) {
+      if (err) return done(err);
+      var fdSlicer = new FdSlicer(fd);
+      var actualPart1 = fdSlicer.createWriteStream({start: testBlobFileSize * 0/4});
+      var actualPart2 = fdSlicer.createWriteStream({start: testBlobFileSize * 1/4});
+      var actualPart3 = fdSlicer.createWriteStream({start: testBlobFileSize * 2/4});
+      var actualPart4 = fdSlicer.createWriteStream({start: testBlobFileSize * 3/4});
+      var in1 = fs.createReadStream(testBlobFile, {start: testBlobFileSize * 0/4, end: testBlobFileSize * 1/4});
+      var in2 = fs.createReadStream(testBlobFile, {start: testBlobFileSize * 1/4, end: testBlobFileSize * 2/4});
+      var in3 = fs.createReadStream(testBlobFile, {start: testBlobFileSize * 2/4, end: testBlobFileSize * 3/4});
+      var in4 = fs.createReadStream(testBlobFile, {start: testBlobFileSize * 3/4, end: testBlobFileSize * 4/4});
+      var pend = new Pend();
+      pend.go(function(cb) {
+        actualPart1.on('finish', cb);
+      });
+      pend.go(function(cb) {
+        actualPart2.on('finish', cb);
+      });
+      pend.go(function(cb) {
+        actualPart3.on('finish', cb);
+      });
+      pend.go(function(cb) {
+        actualPart4.on('finish', cb);
+      });
+      in1.pipe(actualPart1);
+      in2.pipe(actualPart2);
+      in3.pipe(actualPart3);
+      in4.pipe(actualPart4);
+      pend.wait(function() {
+        fs.close(fd, function(err) {
+          if (err) return done(err);
+          var expected = fs.createReadStream(testBlobFile);
+          var actual = fs.createReadStream(testOutBlobFile);
+          streamEqual(expected, actual, function(err, equal) {
+            if (err) return done(err);
+            assert.ok(equal);
+            done();
+          });
+        });
       });
     });
   });

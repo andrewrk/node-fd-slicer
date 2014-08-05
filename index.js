@@ -51,7 +51,6 @@ ReadStream.prototype._read = function(n) {
   self.context.pend.go(function(cb) {
     if (self.destroyed) return cb();
     fs.read(self.context.fd, buffer, 0, toRead, self.pos, function(err, bytesRead) {
-      cb();
       if (err) {
         self.destroy();
         self.emit('error', err);
@@ -61,6 +60,7 @@ ReadStream.prototype._read = function(n) {
         self.pos += bytesRead;
         self.push(buffer.slice(0, bytesRead));
       }
+      cb();
     });
   });
 };
@@ -85,16 +85,24 @@ WriteStream.prototype._write = function(data, encoding, callback) {
   var self = this;
   if (self.destroyed) return;
 
+  var buffer;
+  if (self.context.pend.pending) {
+    buffer = new Buffer(data.length);
+    data.copy(buffer);
+  } else {
+    buffer = data;
+  }
   self.context.pend.go(function(cb) {
     if (self.destroyed) return cb();
-    fs.write(self.context.fd, data, 0, data.length, this.pos, function(err, bytes) {
-      cb();
+    fs.write(self.context.fd, buffer, 0, buffer.length, self.pos, function(err, bytes) {
       if (err) {
         self.destroy();
+        cb();
         callback(err);
       } else {
         self.bytesWritten += bytes;
-        self.pos += data.length;
+        self.pos += bytes;
+        cb();
         callback();
       }
     });
