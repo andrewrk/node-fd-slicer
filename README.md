@@ -48,3 +48,44 @@ fs.open("file.txt", 'r', function(err, fd) {
   secondPart.pipe(secondOut);
 });
 ```
+
+## API Documentation
+
+### new FdSlicer(fd)
+
+```js
+var FdSlicer = require('fd-slicer');
+fs.open("file.txt", 'r', function(err, fd) {
+  if (err) throw err;
+  var fdSlicer = new FdSlicer(fd);
+  // ...
+});
+```
+
+Make sure `fd` is a properly initialized file descriptor. If you want to
+use `createReadStream` make sure you open it for reading and if you want
+to use `createWriteStream` make sure you open it for writing.
+
+#### Properties
+
+##### fdSlicer.fd
+
+The file descriptor passed in.
+
+#### Methods
+
+##### fdSlicer.createReadStream(options)
+
+Creates a read stream based on the file descriptor. Passes `options` to
+the `Readable` stream constructor. Accepts `start` and `end` options just
+like `fs.createReadStream`.
+
+The stream that this returns supports `destroy()` to cancel it.
+
+##### fdSlicer.createWriteStream(options)
+
+Creates a write stream based on the file descriptor. Passes `options` to
+the `Writable` stream constructor. Accepts the `start` option just
+like `fs.createWriteStream`.
+
+The stream that this returns supports `destroy()` to cancel it.
