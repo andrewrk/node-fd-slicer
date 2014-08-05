@@ -40,8 +40,8 @@ var fs = require('fs');
 fs.open("file.txt", 'r', function(err, fd) {
   if (err) throw err;
   var fdSlicer = new FdSlicer(fd);
-  var firstPart = fdSlicer.createReadStream({start: 100});
-  var secondPart = fdSlicer.createReadStream({start: 0, end: 100});
+  var firstPart = fdSlicer.createReadStream({start: 0, end: 100});
+  var secondPart = fdSlicer.createReadStream({start: 100});
   var firstOut = fs.createWriteStream("first.txt");
   var secondOut = fs.createWriteStream("second.txt");
   firstPart.pipe(firstOut);
