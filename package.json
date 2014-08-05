@@ -1,0 +1,8 @@
+{
+  "name": "file-slice-stream",
+  "version": "0.0.0",
+  "description": "safely create multiple ReadStream or WriteStream objects from the same file descriptor",
+  "main": "index.js",
+  "author": "Andrew Kelley <superjoe30@gmail.com>",
+  "license": "MIT"
+}
