@@ -14,5 +14,15 @@
   },
   "dependencies": {
     "pend": "~1.1.2"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/andrewrk/node-fd-slicer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/andrewrk/node-fd-slicer/issues"
   }
 }
