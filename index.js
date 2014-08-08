@@ -4,13 +4,20 @@ var stream = require('stream');
 var Readable = stream.Readable;
 var Writable = stream.Writable;
 var Pend = require('pend');
+var EventEmitter = require('events').EventEmitter;
 
 module.exports = FdSlicer;
 
-function FdSlicer(fd) {
+util.inherits(FdSlicer, EventEmitter);
+function FdSlicer(fd, options) {
+  options = options || {};
+  EventEmitter.call(this);
+
   this.fd = fd;
   this.pend = new Pend();
   this.pend.max = 1;
+  this.refCount = 0;
+  this.autoClose = !!options.autoClose;
 }
 
 FdSlicer.prototype.createReadStream = function(options) {
@@ -21,12 +28,37 @@ FdSlicer.prototype.createWriteStream = function(options) {
   return new WriteStream(this, options);
 };
 
+FdSlicer.prototype.ref = function() {
+  this.refCount += 1;
+};
+
+FdSlicer.prototype.unref = function() {
+  var self = this;
+  self.refCount -= 1;
+
+  if (self.refCount > 0) return;
+  if (self.refCount < 0) throw new Error("invalid unref");
+
+  if (self.autoClose) {
+    fs.close(self.fd, onCloseDone);
+  }
+
+  function onCloseDone(err) {
+    if (err) {
+      self.emit('error', err);
+    } else {
+      self.emit('close');
+    }
+  }
+};
+
 util.inherits(ReadStream, Readable);
 function ReadStream(context, options) {
   options = options || {};
   Readable.call(this, options);
 
   this.context = context;
+  this.context.ref();
 
   this.start = options.start || 0;
   this.end = options.end;
@@ -44,6 +76,7 @@ ReadStream.prototype._read = function(n) {
   }
   if (toRead <= 0) {
     self.push(null);
+    self.context.unref();
     return;
   }
   self.context.pend.go(function(cb) {
@@ -55,6 +88,7 @@ ReadStream.prototype._read = function(n) {
         self.emit('error', err);
       } else if (bytesRead === 0) {
         self.push(null);
+        self.context.unref();
       } else {
         self.pos += bytesRead;
         self.push(buffer.slice(0, bytesRead));
@@ -74,10 +108,16 @@ function WriteStream(context, options) {
   Writable.call(this, options);
 
   this.context = context;
+  this.context.ref();
+
   this.start = options.start || 0;
   this.bytesWritten = 0;
   this.pos = this.start;
   this.destroyed = false;
+
+  this.on('finish', function() {
+    context.unref();
+  });
 }
 
 WriteStream.prototype._write = function(buffer, encoding, callback) {

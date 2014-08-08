@@ -51,7 +51,7 @@ fs.open("file.txt", 'r', function(err, fd) {
 
 ## API Documentation
 
-### FdSlicer
+### FdSlicer(fd, [options])
 
 ```js
 var FdSlicer = require('fd-slicer');
@@ -65,6 +65,13 @@ fs.open("file.txt", 'r', function(err, fd) {
 Make sure `fd` is a properly initialized file descriptor. If you want to
 use `createReadStream` make sure you open it for reading and if you want
 to use `createWriteStream` make sure you open it for writing.
+
+`options` is an optional object which can contain:
+
+ * `autoClose` - if set to `true`, the file descriptor will be automatically
+   closed once the last stream that references it is closed. Defaults to
+   `false`. `ref()` and `unref()` can be used to increase or decrease the
+   reference count, respectively.
 
 #### Properties
 
@@ -89,3 +96,11 @@ the `Writable` stream constructor. Accepts the `start` option just
 like `fs.createWriteStream`.
 
 The stream that this returns supports `destroy()` to cancel it.
+
+##### ref()
+
+Increase the `autoClose` reference count by 1.
+
+##### unref()
+
+Decrease the `autoClose` reference count by 1.

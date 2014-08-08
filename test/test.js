@@ -38,18 +38,25 @@ describe("FdSlicer", function() {
     } catch (err) {
     }
   });
-  it("reads a 20MB file", function(done) {
+  it("reads a 20MB file (autoClose on)", function(done) {
     fs.open(testBlobFile, 'r', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd);
+      var fdSlicer = new FdSlicer(fd, {autoClose: true});
       var actualStream = fdSlicer.createReadStream();
       var expectedStream = fs.createReadStream(testBlobFile);
 
-      streamEqual(expectedStream, actualStream, function(err, equal) {
-        if (err) return done(err);
-        assert.ok(equal);
-        fs.close(fd, done);
+      var pend = new Pend();
+      pend.go(function(cb) {
+        fdSlicer.on('close', cb);
       });
+      pend.go(function(cb) {
+        streamEqual(expectedStream, actualStream, function(err, equal) {
+          if (err) return done(err);
+          assert.ok(equal);
+          cb();
+        });
+      });
+      pend.wait(done);
     });
   });
   it("reads 4 chunks simultaneously", function(done) {
@@ -96,27 +103,24 @@ describe("FdSlicer", function() {
     });
   });
 
-  it("writes a 20MB file", function(done) {
+  it("writes a 20MB file (autoClose on)", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd);
+      var fdSlicer = new FdSlicer(fd, {autoClose: true});
       var actualStream = fdSlicer.createWriteStream();
       var inStream = fs.createReadStream(testBlobFile);
 
-      inStream.pipe(actualStream);
-      actualStream.on('finish', function() {
-        fs.close(fd, function(err) {
-          if (err) return done(err);
-          var expected = fs.createReadStream(testBlobFile);
-          var actual = fs.createReadStream(testOutBlobFile);
+      fdSlicer.on('close', function() {
+        var expected = fs.createReadStream(testBlobFile);
+        var actual = fs.createReadStream(testOutBlobFile);
 
-          streamEqual(expected, actual, function(err, equal) {
-            if (err) return done(err);
-            assert.ok(equal);
-            done();
-          });
+        streamEqual(expected, actual, function(err, equal) {
+          if (err) return done(err);
+          assert.ok(equal);
+          done();
         });
       });
+      inStream.pipe(actualStream);
     });
   });
 
