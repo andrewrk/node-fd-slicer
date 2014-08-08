@@ -1,3 +1,7 @@
+### 0.1.0
+
+ * Add `autoClose` option and `ref()` and `unref()`.
+
 ### 0.0.2
 
  * Add API documentation
