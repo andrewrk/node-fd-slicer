@@ -20,6 +20,26 @@ function FdSlicer(fd, options) {
   this.autoClose = !!options.autoClose;
 }
 
+FdSlicer.prototype.read = function(buffer, offset, length, position, callback) {
+  var self = this;
+  self.pend.go(function(cb) {
+    fs.read(self.fd, buffer, offset, length, position, function(err, bytesRead, buffer) {
+      cb();
+      callback(err, bytesRead, buffer);
+    });
+  });
+};
+
+FdSlicer.prototype.write = function(buffer, offset, length, position, callback) {
+  var self = this;
+  self.pend.go(function(cb) {
+    fs.write(self.fd, buffer, offset, length, position, function(err, written, buffer) {
+      cb();
+      callback(err, written, buffer);
+    });
+  });
+};
+
 FdSlicer.prototype.createReadStream = function(options) {
   return new ReadStream(this, options);
 };

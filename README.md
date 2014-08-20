@@ -97,6 +97,16 @@ like `fs.createWriteStream`.
 
 The stream that this returns supports `destroy()` to cancel it.
 
+##### read(buffer, offset, length, position, callback)
+
+Equivalent to `fs.read`, but with concurrency protection.
+`callback` must be defined.
+
+##### write(buffer, offset, length, position, callback)
+
+Equivalent to `fs.write`, but with concurrency protection.
+`callback` must be defined.
+
 ##### ref()
 
 Increase the `autoClose` reference count by 1.
