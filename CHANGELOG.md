@@ -1,3 +1,7 @@
+### 0.2.0
+
+ * Add read and write functions
+
 ### 0.1.0
 
  * Add `autoClose` option and `ref()` and `unref()`.
