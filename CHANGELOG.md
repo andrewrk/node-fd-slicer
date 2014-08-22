@@ -1,3 +1,7 @@
+### 0.2.1
+
+ * Update pend dependency to latest bugfix version.
+
 ### 0.2.0
 
  * Add read and write functions
