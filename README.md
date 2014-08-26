@@ -85,7 +85,7 @@ The file descriptor passed in.
 
 Creates a read stream based on the file descriptor. Passes `options` to
 the `Readable` stream constructor. Accepts `start` and `end` options just
-like `fs.createReadStream`.
+like `fs.createReadStream`. Note that `end` is an exclusive upper bound.
 
 The stream that this returns supports `destroy()` to cancel it.
 
