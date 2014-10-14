@@ -1,3 +1,7 @@
+### 0.3.1
+
+ * write stream: fix end option behavior
+
 ### 0.3.0
 
  * write stream emits 'progress' events
