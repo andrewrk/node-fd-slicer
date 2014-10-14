@@ -191,6 +191,19 @@ describe("FdSlicer", function() {
     });
   });
 
+  it("write stream start and end work together", function(done) {
+    fs.open(testOutBlobFile, 'w', function(err, fd) {
+      if (err) return done(err);
+      var fdSlicer = new FdSlicer(fd, {autoClose: true});
+      var ws = fdSlicer.createWriteStream({start: 1, end: 1000});
+      ws.on('error', function(err) {
+        assert.strictEqual(err.code, 'ETOOBIG');
+        done();
+      });
+      ws.end(new Buffer(1000));
+    });
+  });
+
   it("write stream emits progress events", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);

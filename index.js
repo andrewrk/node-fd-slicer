@@ -145,7 +145,7 @@ WriteStream.prototype._write = function(buffer, encoding, callback) {
   var self = this;
   if (self.destroyed) return;
 
-  if (self.bytesWritten + buffer.length > self.endOffset) {
+  if (self.pos + buffer.length > self.endOffset) {
     var err = new Error("maximum file length exceeded");
     err.code = 'ETOOBIG';
     callback(err);
