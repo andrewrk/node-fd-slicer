@@ -1,6 +1,6 @@
 {
   "name": "fd-slicer",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "safely create multiple ReadStream or WriteStream objects from the same file descriptor",
   "main": "index.js",
   "scripts": {

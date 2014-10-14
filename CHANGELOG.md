@@ -1,3 +1,7 @@
+### 0.3.2
+
+ * fix write stream and read stream destroy behavior
+
 ### 0.3.1
 
  * write stream: fix end option behavior
