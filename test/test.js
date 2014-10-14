@@ -171,11 +171,11 @@ describe("FdSlicer", function() {
   it("write stream emits error when max size exceeded", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd);
+      var fdSlicer = new FdSlicer(fd, {autoClose: true});
       var ws = fdSlicer.createWriteStream({start: 0, end: 1000});
       ws.on('error', function(err) {
         assert.strictEqual(err.code, 'ETOOBIG');
-        done();
+        fdSlicer.on('close', done);
       });
       ws.end(new Buffer(1001));
     });
@@ -198,7 +198,7 @@ describe("FdSlicer", function() {
       var ws = fdSlicer.createWriteStream({start: 1, end: 1000});
       ws.on('error', function(err) {
         assert.strictEqual(err.code, 'ETOOBIG');
-        done();
+        fdSlicer.on('close', done);
       });
       ws.end(new Buffer(1000));
     });
@@ -224,6 +224,30 @@ describe("FdSlicer", function() {
         ws.write(new Buffer(16 * 1024 * 2));
       }
       ws.end();
+    });
+  });
+
+  it("write stream unrefs when destroyed", function(done) {
+    fs.open(testOutBlobFile, 'w', function(err, fd) {
+      if (err) return done(err);
+      var fdSlicer = new FdSlicer(fd, {autoClose: true});
+      var ws = fdSlicer.createWriteStream();
+      fdSlicer.on('close', done);
+      ws.write(new Buffer(1000));
+      ws.destroy();
+    });
+  });
+
+  it("read stream unrefs when destroyed", function(done) {
+    fs.open(testBlobFile, 'r', function(err, fd) {
+      if (err) return done(err);
+      var fdSlicer = new FdSlicer(fd, {autoClose: true});
+      var rs = fdSlicer.createReadStream();
+      rs.on('error', function(err) {
+        assert.strictEqual(err.message, "stream destroyed");
+        fdSlicer.on('close', done);
+      });
+      rs.destroy();
     });
   });
 });

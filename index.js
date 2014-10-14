@@ -95,6 +95,7 @@ ReadStream.prototype._read = function(n) {
     toRead = Math.min(toRead, self.end - self.pos);
   }
   if (toRead <= 0) {
+    self.destroyed = true;
     self.push(null);
     self.context.unref();
     return;
@@ -104,9 +105,9 @@ ReadStream.prototype._read = function(n) {
     var buffer = new Buffer(toRead);
     fs.read(self.context.fd, buffer, 0, toRead, self.pos, function(err, bytesRead) {
       if (err) {
-        self.destroy();
-        self.emit('error', err);
+        self.destroy(err);
       } else if (bytesRead === 0) {
+        self.destroyed = true;
         self.push(null);
         self.context.unref();
       } else {
@@ -118,8 +119,12 @@ ReadStream.prototype._read = function(n) {
   });
 };
 
-ReadStream.prototype.destroy = function() {
+ReadStream.prototype.destroy = function(err) {
+  if (this.destroyed) return;
+  err = err || new Error("stream destroyed");
   this.destroyed = true;
+  this.emit('error', err);
+  this.context.unref();
 };
 
 util.inherits(WriteStream, Writable);
@@ -136,9 +141,7 @@ function WriteStream(context, options) {
   this.pos = this.start;
   this.destroyed = false;
 
-  this.on('finish', function() {
-    context.unref();
-  });
+  this.on('finish', this.destroy.bind(this));
 }
 
 WriteStream.prototype._write = function(buffer, encoding, callback) {
@@ -148,6 +151,7 @@ WriteStream.prototype._write = function(buffer, encoding, callback) {
   if (self.pos + buffer.length > self.endOffset) {
     var err = new Error("maximum file length exceeded");
     err.code = 'ETOOBIG';
+    self.destroy();
     callback(err);
     return;
   }
@@ -170,5 +174,7 @@ WriteStream.prototype._write = function(buffer, encoding, callback) {
 };
 
 WriteStream.prototype.destroy = function() {
+  if (this.destroyed) return;
   this.destroyed = true;
+  this.context.unref();
 };

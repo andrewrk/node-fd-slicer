@@ -103,7 +103,9 @@ Available `options`:
 
 The ReadableStream that this returns has these additional methods:
 
- * `destroy()` - stop streaming
+ * `destroy(err)` - stop streaming. `err` is optional and is the error that
+   will be emitted in order to cause the streaming to stop. Defaults to
+   `new Error("stream destroyed")`.
 
 ##### createWriteStream(options)
 
