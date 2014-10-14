@@ -9,7 +9,7 @@
   "author": "Andrew Kelley <superjoe30@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "mocha": "~1.21.3",
+    "mocha": "~1.21.5",
     "stream-equal": "~0.1.5"
   },
   "dependencies": {

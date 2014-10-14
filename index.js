@@ -131,6 +131,7 @@ function WriteStream(context, options) {
   this.context.ref();
 
   this.start = options.start || 0;
+  this.endOffset = options.end || Infinity;
   this.bytesWritten = 0;
   this.pos = this.start;
   this.destroyed = false;
@@ -144,6 +145,12 @@ WriteStream.prototype._write = function(buffer, encoding, callback) {
   var self = this;
   if (self.destroyed) return;
 
+  if (self.bytesWritten + buffer.length > self.endOffset) {
+    var err = new Error("maximum file length exceeded");
+    err.code = 'ETOOBIG';
+    callback(err);
+    return;
+  }
   self.context.pend.go(function(cb) {
     if (self.destroyed) return cb();
     fs.write(self.context.fd, buffer, 0, buffer.length, self.pos, function(err, bytes) {
@@ -154,6 +161,7 @@ WriteStream.prototype._write = function(buffer, encoding, callback) {
       } else {
         self.bytesWritten += bytes;
         self.pos += bytes;
+        self.emit('progress');
         cb();
         callback();
       }

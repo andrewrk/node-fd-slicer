@@ -167,4 +167,50 @@ describe("FdSlicer", function() {
       });
     });
   });
+
+  it("write stream emits error when max size exceeded", function(done) {
+    fs.open(testOutBlobFile, 'w', function(err, fd) {
+      if (err) return done(err);
+      var fdSlicer = new FdSlicer(fd);
+      var ws = fdSlicer.createWriteStream({start: 0, end: 1000});
+      ws.on('error', function(err) {
+        assert.strictEqual(err.code, 'ETOOBIG');
+        done();
+      });
+      ws.end(new Buffer(1001));
+    });
+  });
+
+  it("write stream does not emit error when max size not exceeded", function(done) {
+    fs.open(testOutBlobFile, 'w', function(err, fd) {
+      if (err) return done(err);
+      var fdSlicer = new FdSlicer(fd, {autoClose: true});
+      var ws = fdSlicer.createWriteStream({end: 1000});
+      fdSlicer.on('close', done);
+      ws.end(new Buffer(1000));
+    });
+  });
+
+  it("write stream emits progress events", function(done) {
+    fs.open(testOutBlobFile, 'w', function(err, fd) {
+      if (err) return done(err);
+      var fdSlicer = new FdSlicer(fd, {autoClose: true});
+      var ws = fdSlicer.createWriteStream();
+      var progressEventCount = 0;
+      var prevBytesWritten = 0;
+      ws.on('progress', function() {
+        progressEventCount += 1;
+        assert.ok(ws.bytesWritten > prevBytesWritten);
+        prevBytesWritten = ws.bytesWritten;
+      });
+      fdSlicer.on('close', function() {
+        assert.ok(progressEventCount > 5);
+        done();
+      });
+      for (var i = 0; i < 10; i += 1) {
+        ws.write(new Buffer(16 * 1024 * 2));
+      }
+      ws.end();
+    });
+  });
 });

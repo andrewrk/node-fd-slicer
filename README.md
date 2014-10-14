@@ -31,6 +31,12 @@ This module solves this problem by providing `createReadStream` and
 `createWriteStream` that operate on a shared file descriptor and provides
 the convenient stream API while still allowing slicing and dicing.
 
+This module also gives you some additional power that the builtin
+`fs.createWriteStream` do not give you. These features are:
+
+ * Emitting a 'progress' event on write.
+ * Ability to set a maximum size and emit an error if this size is exceeded.
+
 ## Usage
 
 ```js
@@ -83,19 +89,47 @@ The file descriptor passed in.
 
 ##### createReadStream(options)
 
-Creates a read stream based on the file descriptor. Passes `options` to
-the `Readable` stream constructor. Accepts `start` and `end` options just
-like `fs.createReadStream`. Note that `end` is an exclusive upper bound.
+Available `options`:
 
-The stream that this returns supports `destroy()` to cancel it.
+ * `start` - Number. The offset into the file to start reading from. Defaults
+   to 0.
+ * `end` - Number. Exclusive upper bound offset into the file to stop reading
+   from.
+ * `highWaterMark` - Number. The maximum number of bytes to store in the
+   internal buffer before ceasing to read from the underlying resource.
+   Defaults to 16 KB.
+ * `encoding` - String. If specified, then buffers will be decoded to strings
+   using the specified encoding. Defaults to `null`.
+
+The ReadableStream that this returns has these additional methods:
+
+ * `destroy()` - stop streaming
 
 ##### createWriteStream(options)
 
-Creates a write stream based on the file descriptor. Passes `options` to
-the `Writable` stream constructor. Accepts the `start` option just
-like `fs.createWriteStream`.
+Available `options`:
 
-The stream that this returns supports `destroy()` to cancel it.
+ * `start` - Number. The offset into the file to start writing to. Defaults to
+   0.
+ * `end` - Number. Exclusive upper bound offset into the file. If this offset
+   is reached, the write stream will emit an 'error' event and stop functioning.
+   In this situation, `err.code === 'ETOOBIG'`. Defaults to `Infinity`.
+ * `highWaterMark` - Number. Buffer level when `write()` starts returning
+   false. Defaults to 16KB.
+ * `decodeStrings` - Boolean. Whether or not to decode strings into Buffers
+   before passing them to` _write()`. Defaults to `true`.
+
+The WritableStream that this returns has these additional methods:
+
+ * `destroy()` - stop streaming
+
+And these additional properties:
+
+ * `bytesWritten` - number of bytes written to the stream
+
+And these additional events:
+
+ * 'progress' - emitted when `bytesWritten` changes.
 
 ##### read(buffer, offset, length, position, callback)
 
@@ -114,3 +148,13 @@ Increase the `autoClose` reference count by 1.
 ##### unref()
 
 Decrease the `autoClose` reference count by 1.
+
+#### Events
+
+##### 'error'
+
+Emitted if `fs.close` returns an error when auto closing.
+
+##### 'close'
+
+Emitted when fd-slicer closes the file descriptor due to `autoClose`.
