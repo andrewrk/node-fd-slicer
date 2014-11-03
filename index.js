@@ -3,10 +3,13 @@ var util = require('util');
 var stream = require('stream');
 var Readable = stream.Readable;
 var Writable = stream.Writable;
+var PassThrough = stream.PassThrough;
 var Pend = require('pend');
 var EventEmitter = require('events').EventEmitter;
 
 module.exports = FdSlicer;
+FdSlicer.BufferSlicer = BufferSlicer;
+FdSlicer.createFromBuffer = createFromBuffer;
 
 util.inherits(FdSlicer, EventEmitter);
 function FdSlicer(fd, options) {
@@ -81,7 +84,7 @@ function ReadStream(context, options) {
   this.context.ref();
 
   this.start = options.start || 0;
-  this.end = options.end;
+  this.endOffset = options.end;
   this.pos = this.start;
   this.destroyed = false;
 }
@@ -91,8 +94,8 @@ ReadStream.prototype._read = function(n) {
   if (self.destroyed) return;
 
   var toRead = Math.min(self._readableState.highWaterMark, n);
-  if (self.end != null) {
-    toRead = Math.min(toRead, self.end - self.pos);
+  if (self.endOffset != null) {
+    toRead = Math.min(toRead, self.endOffset - self.pos);
   }
   if (toRead <= 0) {
     self.destroyed = true;
@@ -178,3 +181,91 @@ WriteStream.prototype.destroy = function() {
   this.destroyed = true;
   this.context.unref();
 };
+
+util.inherits(BufferSlicer, EventEmitter);
+function BufferSlicer(buffer) {
+  EventEmitter.call(this);
+
+  this.refCount = 0;
+  this.buffer = buffer;
+}
+
+BufferSlicer.prototype.read = function(buffer, offset, length, position, callback) {
+  var end = position + length;
+  var delta = end - this.buffer.length;
+  var written = (delta > 0) ? delta : length;
+  this.buffer.copy(buffer, offset, position, end);
+  process.nextTick(function() {
+    callback(null, written);
+  });
+};
+
+BufferSlicer.prototype.write = function(buffer, offset, length, position, callback) {
+  buffer.copy(this.buffer, position, offset, offset + length);
+  setImmediate(function() {
+    callback(null, length, buffer);
+  });
+};
+
+BufferSlicer.prototype.createReadStream = function(options) {
+  options = options || {};
+  var readStream = new PassThrough(options);
+  readStream.start = options.start || 0;
+  readStream.endOffset = options.end;
+  readStream.pos = readStream.endOffset || this.buffer.length; // yep, we're already done
+  readStream.destroyed = false;
+  readStream.write(this.buffer.slice(readStream.start, readStream.pos));
+  readStream.end();
+  readStream.destroy = function() {
+    readStream.destroyed = true;
+  };
+  return readStream;
+};
+
+BufferSlicer.prototype.createWriteStream = function(options) {
+  var bufferSlicer = this;
+  options = options || {};
+  var writeStream = new WriteStream(options);
+  writeStream.start = options.start || 0;
+  writeStream.endOffset = options.end || Infinity;
+  writeStream.bytesWritten = 0;
+  writeStream.pos = writeStream.start;
+  writeStream.destroyed = false;
+  writeStream._write = function(buffer, encoding, callback) {
+    if (writeStream.destroyed) return;
+
+    var end = writeStream.pos + buffer.length;
+    if (end > writeStream.endOffset) {
+      var err = new Error("maximum file length exceeded");
+      err.code = 'ETOOBIG';
+      writeStream.destroyed = true;
+      callback(err);
+      return;
+    }
+    buffer.copy(bufferSlicer.buffer, writeStream.pos, 0, buffer.length);
+
+    writeStream.bytesWritten += buffer.length;
+    writeStream.pos = end;
+    writeStream.emit('progress');
+  };
+  writeStream.destroy = function() {
+    writeStream.destroyed = true;
+  };
+  return writeStream;
+};
+
+BufferSlicer.prototype.ref = function() {
+  this.refCount += 1;
+};
+
+BufferSlicer.prototype.unref = function() {
+  this.refCount -= 1;
+
+  if (this.refCount < 0) {
+    throw new Error("invalid unref");
+  }
+};
+
+function createFromBuffer(buffer) {
+  return new BufferSlicer(buffer);
+}

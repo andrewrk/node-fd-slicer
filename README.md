@@ -36,6 +36,8 @@ This module also gives you some additional power that the builtin
 
  * Emitting a 'progress' event on write.
  * Ability to set a maximum size and emit an error if this size is exceeded.
+ * Ability to create an `FdSlicer` instance from a `Buffer`. This enables you
+   to provide API for handling files as well as buffers using the same API.
 
 ## Usage
 
@@ -55,9 +57,22 @@ fs.open("file.txt", 'r', function(err, fd) {
 });
 ```
 
+You can also create from a buffer:
+
+```js
+var FdSlicer = require('fd-slicer');
+var fdSlicer = FdSlicer.createFromBuffer(someBuffer);
+var firstPart = fdSlicer.createReadStream({start: 0, end: 100});
+var secondPart = fdSlicer.createReadStream({start: 100});
+var firstOut = fs.createWriteStream("first.txt");
+var secondOut = fs.createWriteStream("second.txt");
+firstPart.pipe(firstOut);
+secondPart.pipe(secondOut);
+```
+
 ## API Documentation
 
-### FdSlicer(fd, [options])
+### new FdSlicer(fd, [options])
 
 ```js
 var FdSlicer = require('fd-slicer');
@@ -79,11 +94,19 @@ to use `createWriteStream` make sure you open it for writing.
    `false`. `ref()` and `unref()` can be used to increase or decrease the
    reference count, respectively.
 
+### FdSlicer.createFromBuffer(buffer)
+
+```js
+var FdSlicer = require('fd-slicer');
+var fdSlicer = FdSlicer.createFromBuffer(someBuffer);
+// ...
+```
+
 #### Properties
 
 ##### fd
 
-The file descriptor passed in.
+The file descriptor passed in. `undefined` if created from a buffer.
 
 #### Methods
 
@@ -159,4 +182,5 @@ Emitted if `fs.close` returns an error when auto closing.
 
 ##### 'close'
 
-Emitted when fd-slicer closes the file descriptor due to `autoClose`.
+Emitted when fd-slicer closes the file descriptor due to `autoClose`. Never
+emitted if created from a buffer.
