@@ -262,6 +262,29 @@ describe("FdSlicer", function() {
       rs.destroy();
     });
   });
+
+  it("fdSlicer.read", function(done) {
+    fs.open(testBlobFile, 'r', function(err, fd) {
+      if (err) return done(err);
+      var slicer = fdSlicer.createFromFd(fd);
+      var outBuf = new Buffer(1024);
+      slicer.read(outBuf, 0, 10, 0, function(err, bytesRead, buf) {
+        assert.strictEqual(bytesRead, 10);
+        fs.close(fd, done);
+      });
+    });
+  });
+
+  it("fdSlicer.write", function(done) {
+    fs.open(testOutBlobFile, 'w', function(err, fd) {
+      if (err) return done(err);
+      var slicer = fdSlicer.createFromFd(fd);
+      slicer.write(new Buffer("blah\n"), 0, 5, 0, function() {
+        if (err) return done(err);
+        fs.close(fd, done);
+      });
+    });
+  });
 });
 
 describe("BufferSlicer", function() {
