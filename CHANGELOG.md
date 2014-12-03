@@ -1,6 +1,12 @@
-### 1.0.0 (UNRELEASED)
+### 1.0.0
 
  * `new FdSlicer(fd, options)` must now be `fdSlicer.createFromFd(fd, options)`
+ * fix behavior when `end` is 0.
+ * fix `createWriteStream` when using `createFromBuffer`
+
+### 0.4.0
+
+ * add ability to create an FdSlicer instance from a Buffer
 
 ### 0.3.2
 
