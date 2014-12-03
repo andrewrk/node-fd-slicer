@@ -168,6 +168,17 @@ describe("FdSlicer", function() {
     });
   });
 
+  it("throws on invalid ref", function(done) {
+    fs.open(testOutBlobFile, 'w', function(err, fd) {
+      if (err) return done(err);
+      var slicer = fdSlicer.createFromFd(fd, {autoClose: true});
+      assert.throws(function() {
+        slicer.unref();
+      }, /invalid unref/);
+      fs.close(fd, done);
+    });
+  });
+
   it("write stream emits error when max size exceeded", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);
@@ -253,8 +264,26 @@ describe("FdSlicer", function() {
 });
 
 describe("BufferSlicer", function() {
-  it("createFromBuffer", function() {
-    var buf = new Buffer(128);
+  it("invalid ref", function() {
+    var slicer = fdSlicer.createFromBuffer(new Buffer(16));
+    slicer.ref();
+    slicer.unref();
+    assert.throws(function() {
+      slicer.unref();
+    }, /invalid unref/);
+  });
+  it("read and write", function(done) {
+    var buf = new Buffer("through the tangled thread the needle finds its way");
     var slicer = fdSlicer.createFromBuffer(buf);
+    var outBuf = new Buffer(1024);
+    slicer.read(outBuf, 10, 11, 8, function(err) {
+      if (err) return done(err);
+      assert.strictEqual(outBuf.toString('utf8', 10, 21), "the tangled");
+      slicer.write(new Buffer("derp"), 0, 4, 7, function(err) {
+        if (err) return done(err);
+        assert.strictEqual(buf.toString('utf8', 7, 19), "derp tangled");
+        done();
+      });
+    });
   });
 });
