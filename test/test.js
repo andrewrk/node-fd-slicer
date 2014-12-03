@@ -5,6 +5,7 @@ var path = require('path');
 var streamEqual = require('stream-equal');
 var assert = require('assert');
 var Pend = require('pend');
+var StreamSink = require('streamsink');
 
 var describe = global.describe;
 var it = global.it;
@@ -285,5 +286,42 @@ describe("BufferSlicer", function() {
         done();
       });
     });
+  });
+  it("createReadStream", function(done) {
+    var str = "I never conquered rarely came, 16 just held such better days";
+    var buf = new Buffer(str);
+    var slicer = fdSlicer.createFromBuffer(buf);
+    var inStream = slicer.createReadStream();
+    var sink = new StreamSink();
+    inStream.pipe(sink);
+    sink.on('finish', function() {
+      assert.strictEqual(sink.toString(), str);
+      inStream.destroy();
+      done();
+    });
+  });
+  it("createWriteStream exceed buffer size", function(done) {
+    var slicer = fdSlicer.createFromBuffer(new Buffer(4));
+    var outStream = slicer.createWriteStream();
+    outStream.on('error', function(err) {
+      assert.strictEqual(err.code, 'ETOOBIG');
+      done();
+    });
+    outStream.write("hi!\n");
+    outStream.write("it warked\n");
+    outStream.end();
+  });
+  it("createWriteStream ok", function(done) {
+    var buf = new Buffer(1024);
+    var slicer = fdSlicer.createFromBuffer(buf);
+    var outStream = slicer.createWriteStream();
+    outStream.on('finish', function() {
+      assert.strictEqual(buf.toString('utf8', 0, "hi!\nit warked\n".length), "hi!\nit warked\n");
+      outStream.destroy();
+      done();
+    });
+    outStream.write("hi!\n");
+    outStream.write("it warked\n");
+    outStream.end();
   });
 });

@@ -140,7 +140,7 @@ function WriteStream(context, options) {
   this.context.ref();
 
   this.start = options.start || 0;
-  this.endOffset = options.end || Infinity;
+  this.endOffset = (options.end == null) ? Infinity : +options.end;
   this.bytesWritten = 0;
   this.pos = this.start;
   this.destroyed = false;
@@ -226,9 +226,9 @@ BufferSlicer.prototype.createReadStream = function(options) {
 BufferSlicer.prototype.createWriteStream = function(options) {
   var bufferSlicer = this;
   options = options || {};
-  var writeStream = new WriteStream(options);
+  var writeStream = new Writable(options);
   writeStream.start = options.start || 0;
-  writeStream.endOffset = options.end || Infinity;
+  writeStream.endOffset = (options.end == null) ? this.buffer.length : +options.end;
   writeStream.bytesWritten = 0;
   writeStream.pos = writeStream.start;
   writeStream.destroyed = false;
@@ -248,6 +248,7 @@ BufferSlicer.prototype.createWriteStream = function(options) {
     writeStream.bytesWritten += buffer.length;
     writeStream.pos = end;
     writeStream.emit('progress');
+    callback();
   };
   writeStream.destroy = function() {
     writeStream.destroyed = true;
