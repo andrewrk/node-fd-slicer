@@ -45,14 +45,14 @@ This module also gives you some additional power that the builtin
 ## Usage
 
 ```js
-var FdSlicer = require('fd-slicer');
+var fdSlicer = require('fd-slicer');
 var fs = require('fs');
 
 fs.open("file.txt", 'r', function(err, fd) {
   if (err) throw err;
-  var fdSlicer = new FdSlicer(fd);
-  var firstPart = fdSlicer.createReadStream({start: 0, end: 100});
-  var secondPart = fdSlicer.createReadStream({start: 100});
+  var slicer = fdSlicer.createFromFd(fd);
+  var firstPart = slicer.createReadStream({start: 0, end: 100});
+  var secondPart = slicer.createReadStream({start: 100});
   var firstOut = fs.createWriteStream("first.txt");
   var secondOut = fs.createWriteStream("second.txt");
   firstPart.pipe(firstOut);
@@ -63,10 +63,10 @@ fs.open("file.txt", 'r', function(err, fd) {
 You can also create from a buffer:
 
 ```js
-var FdSlicer = require('fd-slicer');
-var fdSlicer = FdSlicer.createFromBuffer(someBuffer);
-var firstPart = fdSlicer.createReadStream({start: 0, end: 100});
-var secondPart = fdSlicer.createReadStream({start: 100});
+var fdSlicer = require('fd-slicer');
+var slicer = FdSlicer.createFromBuffer(someBuffer);
+var firstPart = slicer.createReadStream({start: 0, end: 100});
+var secondPart = slicer.createReadStream({start: 100});
 var firstOut = fs.createWriteStream("first.txt");
 var secondOut = fs.createWriteStream("second.txt");
 firstPart.pipe(firstOut);
@@ -75,13 +75,13 @@ secondPart.pipe(secondOut);
 
 ## API Documentation
 
-### new FdSlicer(fd, [options])
+### fdSlicer.createFromFd(fd, [options])
 
 ```js
-var FdSlicer = require('fd-slicer');
+var fdSlicer = require('fd-slicer');
 fs.open("file.txt", 'r', function(err, fd) {
   if (err) throw err;
-  var fdSlicer = new FdSlicer(fd);
+  var slicer = fdSlicer.createFromFd(fd);
   // ...
 });
 ```
@@ -97,11 +97,11 @@ to use `createWriteStream` make sure you open it for writing.
    `false`. `ref()` and `unref()` can be used to increase or decrease the
    reference count, respectively.
 
-### FdSlicer.createFromBuffer(buffer)
+### fdSlicer.createFromBuffer(buffer)
 
 ```js
-var FdSlicer = require('fd-slicer');
-var fdSlicer = FdSlicer.createFromBuffer(someBuffer);
+var fdSlicer = require('fd-slicer');
+var slicer = fdSlicer.createFromBuffer(someBuffer);
 // ...
 ```
 

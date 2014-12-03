@@ -1,4 +1,4 @@
-var FdSlicer = require('../');
+var fdSlicer = require('../');
 var fs = require('fs');
 var crypto = require('crypto');
 var path = require('path');
@@ -41,13 +41,13 @@ describe("FdSlicer", function() {
   it("reads a 20MB file (autoClose on)", function(done) {
     fs.open(testBlobFile, 'r', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd, {autoClose: true});
-      var actualStream = fdSlicer.createReadStream();
+      var slicer = fdSlicer.createFromFd(fd, {autoClose: true});
+      var actualStream = slicer.createReadStream();
       var expectedStream = fs.createReadStream(testBlobFile);
 
       var pend = new Pend();
       pend.go(function(cb) {
-        fdSlicer.on('close', cb);
+        slicer.on('close', cb);
       });
       pend.go(function(cb) {
         streamEqual(expectedStream, actualStream, function(err, equal) {
@@ -62,15 +62,15 @@ describe("FdSlicer", function() {
   it("reads 4 chunks simultaneously", function(done) {
     fs.open(testBlobFile, 'r', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd);
-      var actualPart1 = fdSlicer.createReadStream({start: testBlobFileSize * 0/4, end: testBlobFileSize * 1/4});
-      var actualPart2 = fdSlicer.createReadStream({start: testBlobFileSize * 1/4, end: testBlobFileSize * 2/4});
-      var actualPart3 = fdSlicer.createReadStream({start: testBlobFileSize * 2/4, end: testBlobFileSize * 3/4});
-      var actualPart4 = fdSlicer.createReadStream({start: testBlobFileSize * 3/4, end: testBlobFileSize * 4/4});
-      var expectedPart1 = fdSlicer.createReadStream({start: testBlobFileSize * 0/4, end: testBlobFileSize * 1/4});
-      var expectedPart2 = fdSlicer.createReadStream({start: testBlobFileSize * 1/4, end: testBlobFileSize * 2/4});
-      var expectedPart3 = fdSlicer.createReadStream({start: testBlobFileSize * 2/4, end: testBlobFileSize * 3/4});
-      var expectedPart4 = fdSlicer.createReadStream({start: testBlobFileSize * 3/4, end: testBlobFileSize * 4/4});
+      var slicer = fdSlicer.createFromFd(fd);
+      var actualPart1 = slicer.createReadStream({start: testBlobFileSize * 0/4, end: testBlobFileSize * 1/4});
+      var actualPart2 = slicer.createReadStream({start: testBlobFileSize * 1/4, end: testBlobFileSize * 2/4});
+      var actualPart3 = slicer.createReadStream({start: testBlobFileSize * 2/4, end: testBlobFileSize * 3/4});
+      var actualPart4 = slicer.createReadStream({start: testBlobFileSize * 3/4, end: testBlobFileSize * 4/4});
+      var expectedPart1 = slicer.createReadStream({start: testBlobFileSize * 0/4, end: testBlobFileSize * 1/4});
+      var expectedPart2 = slicer.createReadStream({start: testBlobFileSize * 1/4, end: testBlobFileSize * 2/4});
+      var expectedPart3 = slicer.createReadStream({start: testBlobFileSize * 2/4, end: testBlobFileSize * 3/4});
+      var expectedPart4 = slicer.createReadStream({start: testBlobFileSize * 3/4, end: testBlobFileSize * 4/4});
       var pend = new Pend();
       pend.go(function(cb) {
         streamEqual(expectedPart1, actualPart1, function(err, equal) {
@@ -106,11 +106,11 @@ describe("FdSlicer", function() {
   it("writes a 20MB file (autoClose on)", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd, {autoClose: true});
-      var actualStream = fdSlicer.createWriteStream();
+      var slicer = fdSlicer.createFromFd(fd, {autoClose: true});
+      var actualStream = slicer.createWriteStream();
       var inStream = fs.createReadStream(testBlobFile);
 
-      fdSlicer.on('close', function() {
+      slicer.on('close', function() {
         var expected = fs.createReadStream(testBlobFile);
         var actual = fs.createReadStream(testOutBlobFile);
 
@@ -127,11 +127,11 @@ describe("FdSlicer", function() {
   it("writes 4 chunks simultaneously", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd);
-      var actualPart1 = fdSlicer.createWriteStream({start: testBlobFileSize * 0/4});
-      var actualPart2 = fdSlicer.createWriteStream({start: testBlobFileSize * 1/4});
-      var actualPart3 = fdSlicer.createWriteStream({start: testBlobFileSize * 2/4});
-      var actualPart4 = fdSlicer.createWriteStream({start: testBlobFileSize * 3/4});
+      var slicer = fdSlicer.createFromFd(fd);
+      var actualPart1 = slicer.createWriteStream({start: testBlobFileSize * 0/4});
+      var actualPart2 = slicer.createWriteStream({start: testBlobFileSize * 1/4});
+      var actualPart3 = slicer.createWriteStream({start: testBlobFileSize * 2/4});
+      var actualPart4 = slicer.createWriteStream({start: testBlobFileSize * 3/4});
       var in1 = fs.createReadStream(testBlobFile, {start: testBlobFileSize * 0/4, end: testBlobFileSize * 1/4});
       var in2 = fs.createReadStream(testBlobFile, {start: testBlobFileSize * 1/4, end: testBlobFileSize * 2/4});
       var in3 = fs.createReadStream(testBlobFile, {start: testBlobFileSize * 2/4, end: testBlobFileSize * 3/4});
@@ -171,11 +171,11 @@ describe("FdSlicer", function() {
   it("write stream emits error when max size exceeded", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd, {autoClose: true});
-      var ws = fdSlicer.createWriteStream({start: 0, end: 1000});
+      var slicer = fdSlicer.createFromFd(fd, {autoClose: true});
+      var ws = slicer.createWriteStream({start: 0, end: 1000});
       ws.on('error', function(err) {
         assert.strictEqual(err.code, 'ETOOBIG');
-        fdSlicer.on('close', done);
+        slicer.on('close', done);
       });
       ws.end(new Buffer(1001));
     });
@@ -184,9 +184,9 @@ describe("FdSlicer", function() {
   it("write stream does not emit error when max size not exceeded", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd, {autoClose: true});
-      var ws = fdSlicer.createWriteStream({end: 1000});
-      fdSlicer.on('close', done);
+      var slicer = fdSlicer.createFromFd(fd, {autoClose: true});
+      var ws = slicer.createWriteStream({end: 1000});
+      slicer.on('close', done);
       ws.end(new Buffer(1000));
     });
   });
@@ -194,11 +194,11 @@ describe("FdSlicer", function() {
   it("write stream start and end work together", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd, {autoClose: true});
-      var ws = fdSlicer.createWriteStream({start: 1, end: 1000});
+      var slicer = fdSlicer.createFromFd(fd, {autoClose: true});
+      var ws = slicer.createWriteStream({start: 1, end: 1000});
       ws.on('error', function(err) {
         assert.strictEqual(err.code, 'ETOOBIG');
-        fdSlicer.on('close', done);
+        slicer.on('close', done);
       });
       ws.end(new Buffer(1000));
     });
@@ -207,8 +207,8 @@ describe("FdSlicer", function() {
   it("write stream emits progress events", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd, {autoClose: true});
-      var ws = fdSlicer.createWriteStream();
+      var slicer = fdSlicer.createFromFd(fd, {autoClose: true});
+      var ws = slicer.createWriteStream();
       var progressEventCount = 0;
       var prevBytesWritten = 0;
       ws.on('progress', function() {
@@ -216,7 +216,7 @@ describe("FdSlicer", function() {
         assert.ok(ws.bytesWritten > prevBytesWritten);
         prevBytesWritten = ws.bytesWritten;
       });
-      fdSlicer.on('close', function() {
+      slicer.on('close', function() {
         assert.ok(progressEventCount > 5);
         done();
       });
@@ -230,9 +230,9 @@ describe("FdSlicer", function() {
   it("write stream unrefs when destroyed", function(done) {
     fs.open(testOutBlobFile, 'w', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd, {autoClose: true});
-      var ws = fdSlicer.createWriteStream();
-      fdSlicer.on('close', done);
+      var slicer = fdSlicer.createFromFd(fd, {autoClose: true});
+      var ws = slicer.createWriteStream();
+      slicer.on('close', done);
       ws.write(new Buffer(1000));
       ws.destroy();
     });
@@ -241,13 +241,20 @@ describe("FdSlicer", function() {
   it("read stream unrefs when destroyed", function(done) {
     fs.open(testBlobFile, 'r', function(err, fd) {
       if (err) return done(err);
-      var fdSlicer = new FdSlicer(fd, {autoClose: true});
-      var rs = fdSlicer.createReadStream();
+      var slicer = fdSlicer.createFromFd(fd, {autoClose: true});
+      var rs = slicer.createReadStream();
       rs.on('error', function(err) {
         assert.strictEqual(err.message, "stream destroyed");
-        fdSlicer.on('close', done);
+        slicer.on('close', done);
       });
       rs.destroy();
     });
+  });
+});
+
+describe("BufferSlicer", function() {
+  it("createFromBuffer", function() {
+    var buf = new Buffer(128);
+    var slicer = fdSlicer.createFromBuffer(buf);
   });
 });

@@ -7,9 +7,10 @@ var PassThrough = stream.PassThrough;
 var Pend = require('pend');
 var EventEmitter = require('events').EventEmitter;
 
-module.exports = FdSlicer;
-FdSlicer.BufferSlicer = BufferSlicer;
-FdSlicer.createFromBuffer = createFromBuffer;
+exports.createFromBuffer = createFromBuffer;
+exports.createFromFd = createFromFd;
+exports.BufferSlicer = BufferSlicer;
+exports.FdSlicer = FdSlicer;
 
 util.inherits(FdSlicer, EventEmitter);
 function FdSlicer(fd, options) {
@@ -268,4 +269,8 @@ BufferSlicer.prototype.unref = function() {
 
 function createFromBuffer(buffer) {
   return new BufferSlicer(buffer);
+}
+
+function createFromFd(fd, options) {
+  return new FdSlicer(fd, options);
 }

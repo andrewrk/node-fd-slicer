@@ -1,3 +1,7 @@
+### 1.0.0 (UNRELEASED)
+
+ * `new FdSlicer(fd, options)` must now be `fdSlicer.createFromFd(fd, options)`
+
 ### 0.3.2
 
  * fix write stream and read stream destroy behavior
