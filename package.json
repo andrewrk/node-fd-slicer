@@ -9,11 +9,11 @@
   "author": "Andrew Kelley <superjoe30@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "mocha": "~1.21.5",
+    "mocha": "~2.0.1",
     "stream-equal": "~0.1.5"
   },
   "dependencies": {
-    "pend": "~1.1.3"
+    "pend": "~1.2.0"
   },
   "directories": {
     "test": "test"
