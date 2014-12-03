@@ -6,7 +6,7 @@
   "scripts": {
     "test": "mocha --reporter spec --check-leaks",
     "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- --reporter dot --check-leaks test/test.js",
-    "test-travis": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks test/test.js"
+    "test-travis": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --timeout 10000 --reporter spec --check-leaks test/test.js"
   },
   "author": "Andrew Kelley <superjoe30@gmail.com>",
   "license": "MIT",
