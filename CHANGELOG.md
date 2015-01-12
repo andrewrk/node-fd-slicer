@@ -1,3 +1,7 @@
+### 1.0.1
+
+ * use `setImmediate` instead of `nextTick`
+
 ### 1.0.0
 
  * `new FdSlicer(fd, options)` must now be `fdSlicer.createFromFd(fd, options)`
