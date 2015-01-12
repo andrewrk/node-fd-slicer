@@ -196,7 +196,7 @@ BufferSlicer.prototype.read = function(buffer, offset, length, position, callbac
   var delta = end - this.buffer.length;
   var written = (delta > 0) ? delta : length;
   this.buffer.copy(buffer, offset, position, end);
-  process.nextTick(function() {
+  setImmediate(function() {
     callback(null, written);
   });
 };
