@@ -1,7 +1,6 @@
 # fd-slicer
 
 [![Build Status](https://travis-ci.org/andrewrk/node-fd-slicer.svg?branch=master)](https://travis-ci.org/andrewrk/node-fd-slicer)
-[![Coverage Status](https://coveralls.io/repos/andrewrk/node-fd-slicer/badge.svg?branch=master&service=github)](https://coveralls.io/github/andrewrk/node-fd-slicer?branch=master)
 
 Safe `fs.ReadStream` and `fs.WriteStream` using the same fd.
 
